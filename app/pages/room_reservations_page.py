@@ -5,7 +5,7 @@ from datetime import date
 import sys
 import numpy as np
 from pathlib import Path
-from datetime import date, datetime,
+from datetime import date, datetime, timedelta
 
 from app.backend.table_function_classes.db_roomreservation_functions import DBRRFunctions
 from app.backend.table_function_classes.db_room_functions import DBRoomFunctions
@@ -15,10 +15,13 @@ from app.backend.db import DB
 from app.components.navbar import render_navbar
 
 if not "db" in st.session_state:
-    
-db = get_db()
-rr_functions = DBRRFunctions(db)
-room_functions = DBRoomFunctions(db)
+    st.session_state["db"] = DB()
+if not "rr_functions" in st.session_state:
+    st.session_state["rr_functions"] = DBRRFunctions(st.session_state["db"])
+rr_functions = st.session_state["rr_functions"]
+if not "room_functions" in st.session_state:
+    st.session_state["room_functions"] = DBRoomFunctions(st.session_state["db"])
+room_functions = st.session_state["room_functions"]
 
 def get_utilization_by_hour(room_: Room, reservations: list[RoomReservation], start_date: date, end_date: date):
     util_list = []
