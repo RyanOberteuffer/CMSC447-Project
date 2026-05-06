@@ -1,7 +1,16 @@
-import streamlit as st
-from pathlib import Path
 import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
+from app.components.navbar import render_navbar
+from app.backend.get_db import get_db
+import streamlit as st
+
+PAGE_DIR = Path(__file__).resolve().parent
+APP_DIR = PAGE_DIR.parent
+PROJECT_ROOT = APP_DIR.parent
+ASSETS_DIR = APP_DIR / "assets"
+LOGO_PATH = ASSETS_DIR / "umbclogo.png"
 
 st.set_page_config(
     page_title="UMBC Library Dashboard",
@@ -9,25 +18,16 @@ st.set_page_config(
     layout="wide"
 )
 
-PAGE_DIR = Path(__file__).resolve().parent
-APP_DIR = PAGE_DIR.parent
-PROJECT_ROOT = APP_DIR.parent
-sys.path.append(str(PROJECT_ROOT))
-ASSETS_DIR = APP_DIR / "assets"
-LOGO_PATH = ASSETS_DIR / "umbclogo.png"
-
-from app.backend.get_db import get_db
-db = get_db()
-
-#sys overview
-pending_reservations_count = db.get_pending_reservations_count()
-printers_attention_count = db.get_printers_needing_attention_count()
-
-
-#user login flag
 is_logged_in = hasattr(st.user, "is_logged_in") and st.user.is_logged_in
 name = getattr(st.user, "name", None) or "Guest"
 email = getattr(st.user, "email", None) or "Not signed in"
+
+render_navbar()
+
+db = get_db()
+
+pending_reservations_count = db.get_pending_reservations_count()
+printers_attention_count = db.get_printers_needing_attention_count()
 
 st.markdown(
     """
@@ -35,30 +35,25 @@ st.markdown(
     .stApp {
         background-color: #f7f7f5;
     }
-
     .top-banner {
         background: linear-gradient(90deg, #1f1f1f 0%, #2a2a2a 100%);
         padding: 1.2rem 1.5rem;
         border-radius: 16px;
         border-left: 8px solid #fdb515;
-        border-right 8px solid #fdb515
         box-shadow: 0 4px 14px rgba(0,0,0,0.10);
         margin-bottom: 1rem;
     }
-
     .banner-title {
         color: white;
         font-size: 2rem;
         font-weight: 800;
         margin: 0;
     }
-
     .banner-subtitle {
         color: #e7e7e7;
         margin-top: 0.35rem;
         font-size: 1rem;
     }
-
     .section-card {
         background: white;
         padding: 1.1rem 1.2rem;
@@ -67,20 +62,16 @@ st.markdown(
         box-shadow: 0 3px 12px rgba(0,0,0,0.05);
         margin-bottom: 1rem;
     }
-    
-
     .card-title {
         font-size: 1.05rem;
         font-weight: 800;
         color: #1f1f1f;
         margin-bottom: 0.4rem;
     }
-
     .muted {
         color: #5f6368;
         font-size: 0.95rem;
     }
-
     .account-box {
         background: #fffaf0;
         border: 1px solid #f2d58a;
@@ -89,7 +80,6 @@ st.markdown(
         border-radius: 12px;
         margin-top: 0.8rem;
     }
-
     div.stButton > button {
         border-radius: 12px;
         border: 1px solid #1f1f1f;
@@ -98,7 +88,6 @@ st.markdown(
         font-weight: 700;
         padding: 0.55rem 0.8rem;
     }
-
     div.stButton > button:hover {
         border-color: #fdb515;
         color: #fdb515;
@@ -108,10 +97,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# -----------------------------
 # Top banner
-# -----------------------------
-banner_left, spacer, banner_right = st.columns([8,.5, 1])
+banner_left, spacer, banner_right = st.columns([8, .5, 1])
 
 with banner_left:
     st.markdown(
@@ -130,23 +117,14 @@ with spacer:
     st.write("")
 
 with banner_right:
-    
     if LOGO_PATH.exists():
         st.image(LOGO_PATH, width=95)
 
-# -----------------------------
-# Summary row
-# -----------------------------
-
-#st.markdown('<div class="section-card">', unsafe_allow_html=True)
-
-
+# Account + System Overview
 left, spacer, right = st.columns([1.2, .2, 1])
 
 with left:
-   
     st.markdown('<div class="card-title">Account</div>', unsafe_allow_html=True)
-
     if is_logged_in:
         st.markdown(
             f"""
@@ -169,8 +147,6 @@ with left:
         if st.button("Go to Login", use_container_width=True):
             st.switch_page("pages/login_page.py")
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
 with spacer:
     st.write("")
 
@@ -178,15 +154,9 @@ with right:
     if is_logged_in:
         st.markdown('<div class="card-title">System Overview</div>', unsafe_allow_html=True)
         st.markdown(
-            """
-            <div class="muted">
-                Use this dashboard to monitor library resources, room activity, printing demand,
-                and user feedback in one place.
-            </div>
-            """,
+            '<div class="muted">Use this dashboard to monitor library resources, room activity, printing demand, and user feedback in one place.</div>',
             unsafe_allow_html=True
         )
-
         if pending_reservations_count == 0:
             st.success("No pending reservation requests")
         elif pending_reservations_count == 1:
@@ -200,98 +170,54 @@ with right:
             st.warning("1 printer may need attention")
         else:
             st.warning(f"{printers_attention_count} printers may need attention")
-        st.markdown('</div>', unsafe_allow_html=True)
 
-# -----------------------------
-# Metrics
-# 
-#st.markdown("## Summary")
-
-st.markdown("## Dashboard Navigation")
-
-# -----------------------------
 # Navigation cards
-# -----------------------------
-#st.markdown('<div class="section-card">', unsafe_allow_html=True)
+st.markdown("## Dashboard Navigation")
 
 c1, c2 = st.columns(2)
 
 with c1:
-    with st.container():
-       
-        st.markdown("### Books")
-        st.markdown(
-            '<div class="muted">Browse catalog inventory, search titles, and filter by availability or location.</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        if is_logged_in:
-            if st.button("Open Books Page", use_container_width=True, key="books_btn"):
-                st.switch_page("pages/books_page.py")
-        else:
-            st.button("Login required", use_container_width=True, disabled=True, key="books_disabled")
+    st.markdown("### Books")
+    st.markdown('<div class="muted">Browse catalog inventory, search titles, and filter by availability or location.</div>', unsafe_allow_html=True)
+    if is_logged_in:
+        if st.button("Open Books Page", use_container_width=True, key="books_btn"):
+            st.switch_page("pages/books_page.py")
+    else:
+        st.button("Login required", use_container_width=True, disabled=True, key="books_disabled")
 
 with c2:
-    with st.container():
-      
-        st.markdown("### Room Reservations")
-        st.markdown(
-            '<div class="muted">Review past, current, and future reservations by room, requester, and purpose.</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        if is_logged_in:
-            if st.button("Open Reservations Page", use_container_width=True, key="rooms_btn"):
-                st.switch_page("pages/room_reservations_page.py")
-        else:
-            st.button("Login required", use_container_width=True, disabled=True, key="rooms_disabled")
+    st.markdown("### Room Reservations")
+    st.markdown('<div class="muted">Review past, current, and future reservations by room, requester, and purpose.</div>', unsafe_allow_html=True)
+    if is_logged_in:
+        if st.button("Open Reservations Page", use_container_width=True, key="rooms_btn"):
+            st.switch_page("pages/room_reservations_page.py")
+    else:
+        st.button("Login required", use_container_width=True, disabled=True, key="rooms_disabled")
 
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
 c3, c4 = st.columns(2)
 
 with c3:
-    with st.container():
-        
-        st.markdown("### Printer Management")
-        st.markdown(
-            '<div class="muted">Track printer status, usage activity, and operational demand across the library.</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        if is_logged_in:
-            if st.button("Open Printer Page", use_container_width=True, key="printer_btn"):
-                st.switch_page("pages/printer_page.py")
-        else:
-            st.button("Login required", use_container_width=True, disabled=True, key="printer_disabled")
+    st.markdown("### Printer Management")
+    st.markdown('<div class="muted">Track printer status, usage activity, and operational demand across the library.</div>', unsafe_allow_html=True)
+    if is_logged_in:
+        if st.button("Open Printer Page", use_container_width=True, key="printer_btn"):
+            st.switch_page("pages/printer_page.py")
+    else:
+        st.button("Login required", use_container_width=True, disabled=True, key="printer_disabled")
 
 with c4:
-    with st.container():
-        
-        st.markdown("### Library Traffic")
-        st.markdown(
-            '<div class="muted">View current occupancy, peak hours.</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        if is_logged_in:
-            if st.button("Open Library Traffic Page", use_container_width=True, key="library_traffic_btn"):
-                st.switch_page("pages/library_traffic_page.py")
-        else:
-            st.button("Login required", use_container_width=True, disabled=True, key="traffic_disabled")
+    st.markdown("### Library Traffic")
+    st.markdown('<div class="muted">View current occupancy, peak hours.</div>', unsafe_allow_html=True)
+    if is_logged_in:
+        if st.button("Open Library Traffic Page", use_container_width=True, key="library_traffic_btn"):
+            st.switch_page("pages/library_traffic_page.py")
+    else:
+        st.button("Login required", use_container_width=True, disabled=True, key="traffic_disabled")
 
-st.markdown('<div class="section-card">', unsafe_allow_html=True)
 c5, c6 = st.columns(2)
-with c5:
-    with st.container():
-    
-        st.markdown("### Feedback")
-        st.markdown(
-            '<div class="muted">Submit bug reports, feature requests, and compliments.</div>',
-            unsafe_allow_html=True
-        )
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        if st.button("Open Feedback Page", use_container_width=True, key="feedback_btn"):
-            st.switch_page("pages/feedback_page.py")
 
-    
+with c5:
+    st.markdown("### Feedback")
+    st.markdown('<div class="muted">Submit bug reports, feature requests, and compliments.</div>', unsafe_allow_html=True)
+    if st.button("Open Feedback Page", use_container_width=True, key="feedback_btn"):
+        st.switch_page("pages/feedback_page.py")
