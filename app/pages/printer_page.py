@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
+from app.backend.db import DB
 from app.backend.table_function_classes.db_printer_functions import DBPrinterFunctions
 from app.backend.table_function_classes.db_printerusage_functions import DBPUFunctions
 
@@ -21,11 +22,16 @@ if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
         st.switch_page("pages/login_page.py")
     st.stop()
 
-render_navbar()
-db = get_db()
-printer_functions = DBPrinterFunctions(db)
-pu_functions = DBPUFunctions(db)
+if not "db" in st.session_state:
+    st.session_state["db"] = DB()
+if not "printer_functions" in st.session_state:
+    st.session_state["printer_functions"] = DBPrinterFunctions(st.session_state["db"])
+printer_functions = st.session_state["printer_functions"]
+if not "pu_functions" in st.session_state:
+    st.session_state["pu_functions"] = DBPUFunctions(st.session_state["db"])
+pu_functions = st.session_state["pu_functions"]
 
+render_navbar()
 st.markdown(
     """
     <style>

@@ -2,23 +2,25 @@ import sys
 import os
 import smtplib
 from email.message import EmailMessage
+import streamlit as st
+from datetime import datetime, timezone
+from pathlib import Path
+
 from app.backend.table_object_classes.user import User
 from app.backend.table_object_classes.feedback import Feedback
 from app.backend.table_function_classes.db_feedback_functions import DBFeedbackFunctions
 from app.backend.table_function_classes.db_user_functions import DBUserFunctions
 from app.backend.constants import NOT_FETCHED
 from app.backend.db import DB
-from datetime import datetime, timezone
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+from app.components.navbar import render_navbar
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+#sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
 if not "db" in st.session_state:
     st.session_state["db"] = DB()
 db = st.session_state["db"]
-from app.components.navbar import render_navbar
-from app.backend.get_db import get_db
 import streamlit as st
 
 st.set_page_config(page_title="Feedback", page_icon="📝", layout="wide")
@@ -65,7 +67,6 @@ if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
     st.stop()
 
 render_navbar()
-db = get_db()
 
 if st.button("Back to Home"):
     st.switch_page("pages/home_page.py")
@@ -87,7 +88,7 @@ if submit:
         if most_recent_feedback is not None:
             minutes_since_last_submission = (datetime.now(timezone.utc) - most_recent_feedback.submission_time).total_seconds() / 60
 
-    if content == "":
+    if content == "" or content is None:
         st.error("Please enter a description before submitting!")
     elif minutes_since_last_submission < 5:
         st.error("Can't submit feedback less than 5 minutes apart. Please wait {:.0f} minutes before submitting.".format(5 - minutes_since_last_submission))

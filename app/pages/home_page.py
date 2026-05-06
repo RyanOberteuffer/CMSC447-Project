@@ -62,11 +62,6 @@ email = getattr(st.user, "email", None) or "Not signed in"
 
 render_navbar()
 
-db = get_db()
-
-pending_reservations_count = db.get_pending_reservations_count()
-printers_attention_count = db.get_printers_needing_attention_count()
-
 st.markdown(
     """
     <style>

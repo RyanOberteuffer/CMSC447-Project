@@ -49,7 +49,7 @@ if st.button("Back to Home"):
     st.switch_page("pages/home_page.py")
 
 # Sample Data
-rows = db.get_printable_table("Users")
+rows = db_user_functions.get_printable_table("Users")
 if 'base_df' not in st.session_state:
     st.session_state['base_df'] = pd.DataFrame(rows, columns=["ID", "Username", "Email", "Role"])
 

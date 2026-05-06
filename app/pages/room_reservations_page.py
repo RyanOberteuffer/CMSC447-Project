@@ -1,20 +1,21 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[2]))
-
-from app.components.navbar import render_navbar
 import streamlit as st
 import pandas as pd
+import sys
 from datetime import date
 import sys
 import numpy as np
 from pathlib import Path
-from datetime import date, datetime, timedelta
+from datetime import date, datetime,
+
 from app.backend.table_function_classes.db_roomreservation_functions import DBRRFunctions
 from app.backend.table_function_classes.db_room_functions import DBRoomFunctions
 from app.backend.table_object_classes.room_reservation import RoomReservation
 from app.backend.table_object_classes.room import Room
+from app.backend.db import DB
+from app.components.navbar import render_navbar
 
+if not "db" in st.session_state:
+    
 db = get_db()
 rr_functions = DBRRFunctions(db)
 room_functions = DBRoomFunctions(db)

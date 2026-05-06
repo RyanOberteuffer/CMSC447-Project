@@ -1,17 +1,16 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parents[2]))
-from app.backend.db import DB
-from app.backend.table_function_classes.db_libraryentrylog_functions import DBLELFunctions
-
-from app.components.navbar import render_navbar
-from app.backend.get_db import get_db
 import streamlit as st
 import pandas as pd
+import sys
+from pathlib import Path
+from app.backend.db import DB
+from app.backend.table_function_classes.db_libraryentrylog_functions import DBLELFunctions
+from app.components.navbar import render_navbar
+
 PAGE_DIR = Path(__file__).resolve().parent
 APP_DIR = PAGE_DIR.parent
 PROJECT_ROOT = APP_DIR.parent
 sys.path.append(str(PROJECT_ROOT))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 if not "db" in st.session_state:
     st.session_state["db"] = DB()
@@ -31,7 +30,6 @@ if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
     st.stop()
 
 render_navbar()
-db = get_db()
 
 if st.button("Back to Home"):
     st.switch_page("pages/home_page.py")
