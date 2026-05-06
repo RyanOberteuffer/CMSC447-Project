@@ -3,16 +3,46 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.components.navbar import render_navbar
-from app.backend.get_db import get_db
 import streamlit as st
 import pandas as pd
 from datetime import date
+import sys
+import numpy as np
+from pathlib import Path
+from datetime import date, datetime, timedelta
+from app.backend.table_function_classes.db_roomreservation_functions import DBRRFunctions
+from app.backend.table_function_classes.db_room_functions import DBRoomFunctions
+from app.backend.table_object_classes.room_reservation import RoomReservation
+from app.backend.table_object_classes.room import Room
 
-st.set_page_config(
-    page_title="Room Reservations",
-    page_icon="🚪",
-    layout="wide"
-)
+db = get_db()
+rr_functions = DBRRFunctions(db)
+room_functions = DBRoomFunctions(db)
+
+def get_utilization_by_hour(room_: Room, reservations: list[RoomReservation], start_date: date, end_date: date):
+    util_list = []
+    filtered_reservations = [reservation for reservation in reservations
+                            if (reservation.room_id == room_.id or room == "All")
+                            and start_date <= reservation.date <= end_date]
+    first_hour = min(room_.wd_availability_start, room_.sat_availability_start, room_.sun_availability_start)
+    curr_hour = first_hour
+    last_hour = max(room_.wd_availability_end, room_.sat_availability_end, room_.sun_availability_end)
+    it = 0
+    while curr_hour <= last_hour and it < 24:
+        total_hours_across_dates = 0
+        total_hours_across_dates += np.busday_count(start_date, end_date) * (room_.wd_availability_start <= curr_hour < room_.wd_availability_end)
+        total_hours_across_dates += np.busday_count(start_date, end_date, weekmask='0000010') * (room_.sat_availability_start <= curr_hour < room_.sat_availability_end)
+        total_hours_across_dates += np.busday_count(start_date, end_date, weekmask='0000001') * (room_.sun_availability_start <= curr_hour < room_.sun_availability_end)
+        if total_hours_across_dates > 0:
+            total_reservation_hours = len([r for r in filtered_reservations if r.start_time <= curr_hour < r.end_time])
+            util_list.append((curr_hour, total_reservation_hours, total_hours_across_dates))
+        else:
+            pass
+
+        curr_hour = (datetime.combine(date.today(), curr_hour) + timedelta(hours=1)).time()
+        it += 1
+
+    return util_list
 
 if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
     st.warning("You must be signed in to access this page.")
@@ -23,36 +53,51 @@ if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
     st.stop()
 
 render_navbar()
-db = get_db()
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(PROJECT_ROOT))
+
+st.set_page_config(
+    page_title="Room Reservations",
+    page_icon="x",
+    layout="wide"
+)
+
+#home button
 if st.button("Back to Home"):
     st.switch_page("pages/home_page.py")
 
 st.title("Room Reservations")
 st.caption("Monitor past, current, and upcoming reservations across library rooms.")
 
-rows = db.get_room_reservations()
+# -----------------------------
+# Data loading
 
-columns = [
-    "Reservation ID", "Room", "Location", "Capacity",
-    "Reserved By", "Purpose", "Date", "Start Time",
-    "End Time", "Status", "Notes", "Created At"
-]
+rr_functions.refresh_data()
+rows = rr_functions.get_reservations()
 
-df = pd.DataFrame(rows, columns=columns)
+df = pd.DataFrame([rr.to_row() for rr in rows])
+df["is_canceled"] = df["is_canceled"].map({False: "No", True: "Yes"})
+df["room_id"] = df["room_id"].map(room_functions.get_room_mapping())
+df.columns = ["ID", "Student Name", "Room Name", "Date", "Start Time", "End Time", "Request Timestamp", "Is Cancelled"]
 
 if df.empty:
     st.info("No reservation data available yet.")
     st.stop()
 
-df["Date"] = pd.to_datetime(df["Date"]).dt.date
+# -----------------------------
+# Cleanup / formatting
+df["Room Name"] = df["Room Name"].astype("category")
 df["Start Time"] = df["Start Time"].astype(str).str[:5]
 df["End Time"] = df["End Time"].astype(str).str[:5]
-df["Created At"] = pd.to_datetime(df["Created At"], errors="coerce")
 
 today = date.today()
 
 def classify_period(reservation_date):
+    """
+    :param reservation_date:
+    :return:
+    """
     if reservation_date < today:
         return "Past"
     elif reservation_date == today:
@@ -65,93 +110,93 @@ total_reservations = len(df)
 past_count = len(df[df["Period"] == "Past"])
 today_count = len(df[df["Period"] == "Today"])
 future_count = len(df[df["Period"] == "Future"])
-pending_count = len(df[df["Status"].str.lower() == "pending"])
+cancellation_count = len(df[df["Is Cancelled"] == "Yes"])
 
 m1, m2, m3, m4, m5 = st.columns(5)
 m1.metric("Total", total_reservations)
 m2.metric("Past", past_count)
 m3.metric("Today", today_count)
 m4.metric("Upcoming", future_count)
-m5.metric("Pending", pending_count)
+m5.metric("Cancelled", cancellation_count)
 
 st.markdown("---")
 st.subheader("Filters")
 
-c1, c2, c3, c4 = st.columns(4)
+c1, c2, c3 = st.columns(3)
 
 with c1:
-    search_text = st.text_input(
-        "Search by person or purpose",
-        placeholder="e.g. study group, Ava Johnson"
+    period_filter = st.selectbox(
+        "Timeframe",
+        ["All", "Past", "Today", "Future"]
     )
+
 with c2:
-    period_filter = st.selectbox("Timeframe", ["All", "Past", "Today", "Future"])
+    room_options = ["All"] + sorted(df["Room Name"].dropna().unique().tolist())
+    room_filter = st.selectbox("Room Name", room_options)
+
 with c3:
-    room_options = ["All"] + sorted(df["Room"].dropna().unique().tolist())
-    room_filter = st.selectbox("Room", room_options)
-with c4:
-    status_options = ["All"] + sorted(df["Status"].dropna().unique().tolist())
-    status_filter = st.selectbox("Status", status_options)
+    student_name_filter = st.text_input("Student Name", value="")
 
 filtered_df = df.copy()
 
-if search_text:
-    q = search_text.strip().lower()
-    filtered_df = filtered_df[
-        filtered_df["Reserved By"].str.lower().str.contains(q, na=False) |
-        filtered_df["Purpose"].str.lower().str.contains(q, na=False)
-    ]
+if student_name_filter != "":
+    filtered_df = filtered_df[filtered_df["Student Name"] == student_name_filter]
 
 if period_filter != "All":
     filtered_df = filtered_df[filtered_df["Period"] == period_filter]
+
 if room_filter != "All":
-    filtered_df = filtered_df[filtered_df["Room"] == room_filter]
-if status_filter != "All":
-    filtered_df = filtered_df[filtered_df["Status"] == status_filter]
+    filtered_df = filtered_df[filtered_df["Room Name"] == room_filter]
 
-filtered_df = filtered_df.sort_values(
-    by=["Date", "Start Time", "Room"],
-    ascending=[True, True, True]
-)
+filtered_df = filtered_df.sort_values(by=["Date", "Start Time", "Room Name"], ascending=[True, True, True])
 
+# -----------------------------
+# Main reservation table
 st.subheader("Reservation Timeline")
-display_df = filtered_df[[
-    "Date", "Start Time", "End Time", "Room", "Location",
-    "Reserved By", "Purpose", "Status", "Notes"
-]]
-st.dataframe(display_df, use_container_width=True, hide_index=True)
+st.dataframe(filtered_df,
+             use_container_width=True,
+             hide_index=True,
+             column_config={"Request Timestamp": None})
 
+# -----------------------------
+# Sectioned views
 st.markdown("---")
 st.subheader("Grouped Views")
 
 tab1, tab2, tab3 = st.tabs(["Today", "Upcoming", "Past"])
 
 with tab1:
-    today_df = df[df["Period"] == "Today"].sort_values(by=["Start Time", "Room"])
+    today_df = df[df["Period"] == "Today"].sort_values(by=["Start Time", "Room Name"])
     if today_df.empty:
         st.info("No reservations scheduled for today.")
     else:
-        st.dataframe(
-            today_df[["Start Time", "End Time", "Room", "Reserved By", "Purpose", "Status"]],
-            use_container_width=True, hide_index=True
-        )
+        st.dataframe(today_df, use_container_width=True, hide_index=True)
 
 with tab2:
     future_df = df[df["Period"] == "Future"].sort_values(by=["Date", "Start Time"])
     if future_df.empty:
         st.info("No upcoming reservations.")
     else:
-        st.dataframe(
-            future_df[["Date", "Start Time", "End Time", "Room", "Reserved By", "Purpose", "Status"]],
-            use_container_width=True, hide_index=True
-        )
+        st.dataframe(future_df, use_container_width=True, hide_index=True)
 
 with tab3:
     past_df = df[df["Period"] == "Past"].sort_values(by=["Date", "Start Time"], ascending=[False, False])
     if past_df.empty:
         st.info("No past reservations found.")
     else:
-        st.dataframe(
-            past_df[["Date", "Start Time", "End Time", "Room", "Reserved By", "Purpose", "Status"]],
-            use_container_width=True, hide_index=True
-        )
+        st.dataframe(past_df, use_container_width=True, hide_index=True)
+
+st.subheader("Room Utilization")
+c1, c2, c3 = st.columns(3)
+with c1:
+    room_options = ["All"] + sorted(df["Room Name"].dropna().unique().tolist())
+    room_filter = st.selectbox("Room Name", room_options)
+if room_filter != "All":
+    room = room_functions.get_room_by_room_number(room_filter)
+    utilization_df = pd.DataFrame(
+    get_utilization_by_hour(room, rows, datetime.now().date(), datetime.now().date() + timedelta(days=10)))
+else:
+    room = "All"
+utilization_df.columns = ["Hour", "Utilization"]
+utilization_df.set_index("Hour", inplace=True)
+st.dataframe(utilization_df, use_container_width=True)

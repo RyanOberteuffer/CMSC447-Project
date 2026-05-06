@@ -1,12 +1,13 @@
-INSERT INTO Users (user_name, user_email, user_password)
+INSERT INTO Users (id, name, email, role)
 VALUES
-    ('Ryan', 'ryano3@umbc.edu', 'password'),
-    ('Ava Johnson', 'avaj@umbc.edu', 'password'),
-    ('Marcus Lee', 'mlee2@umbc.edu', 'password'),
-    ('Sophia Patel', 'spatel4@umbc.edu', 'password'),
-    ('Daniel Kim', 'dkim7@umbc.edu', 'password');
+    (-1, 'Anonymous/Unknown', '', ''),
+    (0, 'Ryan', 'ryano3@umbc.edu', 'developer'),
+    (1, 'Ava Johnson', 'avaj@umbc.edu', 'user'),
+    (2, 'Marcus Lee', 'mlee2@umbc.edu', 'user'),
+    (3, 'Sophia Patel', 'spatel4@umbc.edu', 'user'),
+    (4, 'Daniel Kim', 'dkim7@umbc.edu', 'user');
 
-INSERT INTO Departments (department_name, department_code, faculty_head, office_location)
+INSERT INTO Departments (name, code, faculty_head, office_location)
 VALUES
     ('Computer Science', 'CS', 'Dr. Mohamed Younis', 'ITE 325'),
     ('Chemistry', 'CHEM', 'Dr. Brian Cullum', 'MEYR 243B'),
@@ -21,30 +22,42 @@ VALUES
 	('Psychology', 'PSYC', 'Dr. Lira Yoon', 'MP 312'),
 	('Sociology, Anthropology, and Public Health', 'SAPH', 'Dr. Andrea Kalfoglou', 'PUP 233');
     
-INSERT INTO Room (room_name, room_location, capacity, room_type)
+INSERT INTO Room (type, number, capacity, description, wd_avblty_start, wd_avblty_end, sat_avblty_start, sat_avblty_end, sun_avblty_start, sun_avblty_end)
 VALUES
-    ('Library Study Room A', 'First Floor - East Wing', 4, 'Study Room'),
-    ('Library Study Room B', 'First Floor - East Wing', 6, 'Study Room'),
-    ('Library Collaboration Room 1', 'Second Floor - North Wing', 8, 'Collaboration Room'),
-    ('Library Collaboration Room 2', 'Second Floor - North Wing', 10, 'Collaboration Room'),
-    ('Library Conference Room', 'Third Floor - Admin Area', 12, 'Conference Room'),
-    ('Digital Media Lab', 'Second Floor - Technology Center', 16, 'Lab');
-
-INSERT INTO RoomReservations
-(room_id, user_id, purpose, reservation_date, start_time, end_time, status, notes)
-VALUES
-    (1, 1, 'Faculty research meeting', '2026-03-28', '09:00:00', '10:30:00', 'Completed', 'Weekly coordination meeting'),
-    (2, 2, 'Student study group', '2026-03-29', '13:00:00', '15:00:00', 'Completed', 'CMSC exam review'),
-    (3, 3, 'Department planning session', '2026-03-31', '10:00:00', '11:30:00', 'Approved', 'Quarterly planning discussion'),
-    (4, 4, 'Capstone team meeting', '2026-03-31', '14:00:00', '16:00:00', 'Approved', 'Sprint planning'),
-    (1, 5, 'Workshop preparation', '2026-04-01', '08:30:00', '10:00:00', 'Approved', 'Prepare event materials'),
-    (5, 2, 'Interview session', '2026-04-01', '11:00:00', '12:00:00', 'Pending', 'Candidate interview'),
-    (5, 2, 'Interview prep session', '2026-05-01', '10:00:00', '12:00:00', 'Pending', 'Mock interview'),
-    (5, 2, 'Student club mmeeting', '2026-05-07', '08:00:00', '12:00:00', 'Pending', 'Project creation meeting'),
-    (2, 1, 'Faculty office hours overflow', '2026-04-02', '15:00:00', '17:00:00', 'Approved', 'Overflow seating'),
-    (3, 4, 'Student organization meeting', '2026-04-03', '18:00:00', '19:30:00', 'Pending', 'Club transition meeting'),
-    (4, 3, 'Library orientation session', '2026-04-05', '09:30:00', '11:00:00', 'Approved', 'Orientation for new workers'),
-    (6, 5, 'Digital tools workshop', '2026-04-06', '13:30:00', '15:00:00', 'Approved', 'Workshop on media tools');
+    ('Group', '368', 4,
+        'This room is available to UMBC students, faculty, and staff. It contains a small conference table and a smart TV with Chromecast, which allows a laptop, tablet or smartphone to stream content to the screen.',
+        '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '257', 8,
+        "This room has been set up for students to practice giving presentations, speeches, etc. Bring your flash drive to plug into our one-button recording system - when you're finished, you'll have a recording of your presentation to critique.",
+        '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '258', 30,
+        'Our Screening Room is designed for groups to view films. It is located on the 2nd floor of the library and fits up to 30 people.',
+        '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', 'RLC Seminar Room', 6,
+        'Contains a small conference table, large-screen monitor, and a projector with cables to connect to your laptop.',
+        '00:00:00', '24:00:00', '00:00:00', '24:00:00', '00:00:00', '24:00:00'),
+    ('Group', '210', 2, 'Small group study room with chalkboard.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '211', 2, 'Small group study room with a whiteboard and a chalkboard.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '212', 2, 'A small group study room.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '213', 2, 'Small group study room with a chalkboard.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '369', 2, 'Small group study room.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '370', 2, 'Small group study room.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '371', 2, 'Small group study room.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '372', 2, 'Small group study room.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '373', 2, 'Small group study room', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '374', 2, 'Small group study room with chalkboard.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '453', 4, 'Small group study room with a whiteboard.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '454', 4, 'Small group study room with computer.', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '456', 4, 'Small group study room with a computer', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Group', '457', 4, 'Small group study room with a computer', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '204', 1, '', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '205', 1, '', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '206', 1, 'Study room with seating for one', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '207', 1, 'Study room with seating for one', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '208', 1, 'Study room with seating for one', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '209', 1, 'Study room with seating for one', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '231', 1, 'Study room with seating for one', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00'),
+    ('Individual', '232', 1, 'Study room with seating for one', '08:00:00', '22:00:00', '10:00:00', '17:00:00', '12:00:00', '22:00:00');
 
 INSERT INTO BookLocator (title, author, isbn, shelf_location, availability_status)
 VALUES
@@ -64,7 +77,7 @@ VALUES
 	('Circe', 'Madeline Miller', '9780316556347', 'MYTH-MILL-219', 'Checked Out'),
 	('Quiet: The Power of Introverts', 'Susan Cain', '9780307352156', 'PSY-CAIN-332', 'Available');
 
-INSERT INTO Printer (printer_name, printer_location, printer_model, curr_status, toner_level, paper_level, last_maintenance)
+INSERT INTO Printer (name, location, model, curr_status, toner_level, paper_level, last_maintenance)
 VALUES
     ('Printer A', 'First Floor - Lobby', 'HP LaserJet Pro 4001', 'Available', 82, 76, '2026-03-15'),
     ('Printer B', 'First Floor - Study Area', 'Canon imageCLASS MF455dw', 'Busy', 64, 52, '2026-03-10'),

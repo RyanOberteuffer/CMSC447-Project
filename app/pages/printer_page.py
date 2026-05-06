@@ -1,11 +1,17 @@
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
+from app.backend.table_function_classes.db_printer_functions import DBPrinterFunctions
+from app.backend.table_function_classes.db_printerusage_functions import DBPUFunctions
 
 from app.components.navbar import render_navbar
-from app.backend.get_db import get_db
 import streamlit as st
 import pandas as pd
+
+PAGE_DIR = Path(__file__).resolve().parent
+APP_DIR = PAGE_DIR.parent
+PROJECT_ROOT = APP_DIR.parent
+sys.path.append(str(PROJECT_ROOT))
 
 st.set_page_config(page_title="Printer Management", page_icon="🖨️", layout="wide")
 
@@ -17,6 +23,8 @@ if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
 
 render_navbar()
 db = get_db()
+printer_functions = DBPrinterFunctions(db)
+pu_functions = DBPUFunctions(db)
 
 st.markdown(
     """
@@ -46,9 +54,9 @@ if st.button("Back to Home"):
 st.title("Printer Management")
 st.caption("Monitor printer availability, maintenance, supply levels, and recent usage.")
 
-printer_rows = db.get_printers()
-usage_rows = db.get_printer_usage()
-summary_rows = db.get_printer_usage_summary()
+printer_rows = printer_functions.get_printers()
+usage_rows = pu_functions.get_printer_usage()
+summary_rows = pu_functions.get_printer_usage_summary()
 
 printer_df = pd.DataFrame(
     printer_rows,

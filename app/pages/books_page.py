@@ -6,7 +6,9 @@ from app.components.navbar import render_navbar
 from app.backend.get_db import get_db
 import streamlit as st
 import pandas as pd
+from app.backend.get_db import get_db
 
+if not st.user.is_logged_in:
 st.set_page_config(page_title="Book Management", page_icon="📚", layout="wide")
 
 if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
@@ -18,6 +20,12 @@ if not (hasattr(st.user, "is_logged_in") and st.user.is_logged_in):
     st.stop()
 
 render_navbar()
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(PROJECT_ROOT))
+
+st.set_page_config(page_title="Book Management", page_icon="x", layout="wide")
+
 db = get_db()
 
 if st.button("Back to Home"):

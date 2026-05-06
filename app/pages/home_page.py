@@ -3,8 +3,20 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 from app.components.navbar import render_navbar
-from app.backend.get_db import get_db
 import streamlit as st
+from pathlib import Path
+import sys
+from app.backend.db import DB
+from app.backend.table_function_classes.db_roomreservation_functions import DBRRFunctions
+from app.backend.table_function_classes.db_printer_functions import DBPrinterFunctions
+from app.backend.table_function_classes.db_user_functions import DBUserFunctions
+from app.backend.table_object_classes.user import User
+
+st.set_page_config(
+    page_title="UMBC Library Dashboard",
+    page_icon="📚",
+    layout="wide"
+)
 
 PAGE_DIR = Path(__file__).resolve().parent
 APP_DIR = PAGE_DIR.parent
@@ -12,6 +24,32 @@ PROJECT_ROOT = APP_DIR.parent
 ASSETS_DIR = APP_DIR / "assets"
 LOGO_PATH = ASSETS_DIR / "umbclogo.png"
 
+if not "db" in st.session_state:
+    st.session_state["db"] = DB()
+
+if not "rr_functions" in st.session_state:
+    st.session_state["rr_functions"] = DBRRFunctions(st.session_state["db"])
+rr_functions = st.session_state["rr_functions"]
+
+if not "printer_functions" in st.session_state:
+    st.session_state["printer_functions"] = DBPrinterFunctions(st.session_state["db"])
+printer_functions = st.session_state["printer_functions"]
+
+if not "user_functions" in st.session_state:
+    st.session_state["user_functions"] = DBUserFunctions(st.session_state["db"])
+user_functions = st.session_state["user_functions"]
+
+#sys overview
+pending_reservations_count = rr_functions.get_reservations_count()
+printers_attention_count = printer_functions.get_printers_needing_attention_count()
+
+#user login flag
+if not "user" in st.session_state:
+    if st.user.is_logged_in:
+        partial_user_obj = User(email=st.user.email)
+        st.session_state["user"] = user_functions.get_user(partial_user_obj)
+    else:
+        st.session_state["user"] = User()
 st.set_page_config(
     page_title="UMBC Library Dashboard",
     page_icon="📚",
@@ -125,12 +163,13 @@ left, spacer, right = st.columns([1.2, .2, 1])
 
 with left:
     st.markdown('<div class="card-title">Account</div>', unsafe_allow_html=True)
-    if is_logged_in:
+
+    if st.user.is_logged_in:
         st.markdown(
             f"""
             <div class="account-box">
-                <div><strong>Name:</strong> {name}</div>
-                <div><strong>Email:</strong> {email}</div>
+                <div><strong>Name:</strong> {st.session_state["user"].name}</div>
+                <div><strong>Email:</strong> {st.session_state["user"].email}</div>
                 <div><strong>Status:</strong> Authenticated through Google</div>
             </div>
             """,
@@ -151,7 +190,7 @@ with spacer:
     st.write("")
 
 with right:
-    if is_logged_in:
+    if st.user.is_logged_in:
         st.markdown('<div class="card-title">System Overview</div>', unsafe_allow_html=True)
         st.markdown(
             '<div class="muted">Use this dashboard to monitor library resources, room activity, printing demand, and user feedback in one place.</div>',
@@ -179,7 +218,7 @@ c1, c2 = st.columns(2)
 with c1:
     st.markdown("### Books")
     st.markdown('<div class="muted">Browse catalog inventory, search titles, and filter by availability or location.</div>', unsafe_allow_html=True)
-    if is_logged_in:
+    if st.user.is_logged_in:
         if st.button("Open Books Page", use_container_width=True, key="books_btn"):
             st.switch_page("pages/books_page.py")
     else:
@@ -188,7 +227,7 @@ with c1:
 with c2:
     st.markdown("### Room Reservations")
     st.markdown('<div class="muted">Review past, current, and future reservations by room, requester, and purpose.</div>', unsafe_allow_html=True)
-    if is_logged_in:
+    if st.user.is_logged_in:
         if st.button("Open Reservations Page", use_container_width=True, key="rooms_btn"):
             st.switch_page("pages/room_reservations_page.py")
     else:
@@ -199,7 +238,7 @@ c3, c4 = st.columns(2)
 with c3:
     st.markdown("### Printer Management")
     st.markdown('<div class="muted">Track printer status, usage activity, and operational demand across the library.</div>', unsafe_allow_html=True)
-    if is_logged_in:
+    if st.user.is_logged_in:
         if st.button("Open Printer Page", use_container_width=True, key="printer_btn"):
             st.switch_page("pages/printer_page.py")
     else:
@@ -208,7 +247,7 @@ with c3:
 with c4:
     st.markdown("### Library Traffic")
     st.markdown('<div class="muted">View current occupancy, peak hours.</div>', unsafe_allow_html=True)
-    if is_logged_in:
+    if st.user.is_logged_in:
         if st.button("Open Library Traffic Page", use_container_width=True, key="library_traffic_btn"):
             st.switch_page("pages/library_traffic_page.py")
     else:
@@ -221,3 +260,17 @@ with c5:
     st.markdown('<div class="muted">Submit bug reports, feature requests, and compliments.</div>', unsafe_allow_html=True)
     if st.button("Open Feedback Page", use_container_width=True, key="feedback_btn"):
         st.switch_page("pages/feedback_page.py")
+
+if st.user.is_logged_in:
+    user_role = st.session_state["user"].role
+    if user_role == "admin" or user_role == "developer":
+        with c6:
+            with st.container():
+                st.markdown("### Admin Controls")
+                st.markdown(
+                    '<div class="muted">Add and remove users, change permissions</div>',
+                    unsafe_allow_html=True
+                )
+                st.markdown('</div>', unsafe_allow_html=True)
+                if st.button("Open Admin Controls", use_container_width=True, key="admin_btn"):
+                    st.switch_page("pages/admin_controls_page.py")
