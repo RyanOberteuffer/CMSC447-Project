@@ -63,11 +63,10 @@ class RoomAvailabilityScraper:
         for reservation in booking_data:
             student_name = reservation["nickname"]
             room_id = room_db.get_room_by_room_number(reservation["itemName"]).id
-            date = datetime.fromisoformat(reservation["from"]).date()
-            start_time = datetime.fromisoformat(reservation["from"]).time()
-            end_time = datetime.fromisoformat(reservation["to"]).time()
+            start_dt = datetime.fromisoformat(reservation["from"])
+            end_dt = datetime.fromisoformat(reservation["to"])
             request_timestamp = datetime.now()
-            reservation = RoomReservation(-1, student_name, room_id, date, start_time, end_time, request_timestamp)
+            reservation = RoomReservation(-1, student_name, room_id, start_dt, end_dt, request_timestamp)
             bookings.append(reservation)
 
         return bookings
