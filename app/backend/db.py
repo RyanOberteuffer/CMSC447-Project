@@ -38,6 +38,13 @@ class DB:
 
         return cursor
 
+    def execute_batch(self, command, paramslist):
+        with self.connection as connection:
+            cursor = connection.cursor()
+            cursor.executemany(command, paramslist)
+
+        return cursor
+
     def get_one(self, command, params):
         """
         sqlite3's fetchone wrapped with some code. fetchone will return a dictionary if a match is found, otherwise None. If fetchone fails,

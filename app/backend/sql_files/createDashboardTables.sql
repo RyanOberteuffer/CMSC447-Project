@@ -31,16 +31,16 @@ CREATE TABLE IF NOT EXISTS RoomReservations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_name VARCHAR(50),
     room_id INT NOT NULL,
-    reservation_date DATE NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
+    start_dt DATETIME NOT NULL,
+    end_dt DATETIME NOT NULL,
     request_timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_canceled INT DEFAULT 0,
+    UNIQUE(room_id, start_dt),
     FOREIGN KEY (room_id) REFERENCES Room(id)
 );
 
 CREATE TABLE IF NOT EXISTS BookLocator (
-    book_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     title VARCHAR(500) NOT NULL,
     author VARCHAR(100),
     isbn VARCHAR(20) UNIQUE,
@@ -48,14 +48,12 @@ CREATE TABLE IF NOT EXISTS BookLocator (
     availability_status VARCHAR(20) DEFAULT 'available'
 );
 
-
-
 CREATE TABLE IF NOT EXISTS Printer (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(50) NOT NULL,
     location VARCHAR(100),
     model VARCHAR(100),
-    curr_status VARCHAR(30) DEFAULT 'Available',
+    curr_status VARCHAR(30) DEFAULT 'available',
     toner_level INT,
     paper_level INT,
     last_maintenance DATE
@@ -83,4 +81,9 @@ CREATE TABLE IF NOT EXISTS FeedbackForms (
     submission_time DATETIME DEFAULT CURRENT_TIMESTAMP,
     user_id INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES Users(id)
+);
+
+CREATE TABLE IF NOT EXISTS TableMetadata (
+    table_name PRIMARY KEY,
+    last_modified DATETIME
 );

@@ -81,9 +81,29 @@ rr_functions.refresh_data()
 rows = rr_functions.get_reservations()
 
 df = pd.DataFrame([rr.to_row() for rr in rows])
-df["is_canceled"] = df["is_canceled"].map({False: "No", True: "Yes"})
-df["room_id"] = df["room_id"].map(room_functions.get_room_mapping())
-df.columns = ["ID", "Student Name", "Room Name", "Date", "Start Time", "End Time", "Request Timestamp", "Is Cancelled"]
+df = (df.assign(
+        # Convert to datetime and extract components in one go
+        start_dt = pd.to_datetime(df["start_dt"]),
+        end_dt = pd.to_datetime(df["end_dt"]),
+        Date = lambda x: x["start_dt"].dt.date,
+        start_time = lambda x: x["start_dt"].dt.time,
+        end_time = lambda x: x["end_dt"].dt.time,
+        # Map values
+        is_canceled = df["is_canceled"].map({False: "No", True: "Yes"}),
+        room_id = df["room_id"].map(room_functions.get_room_mapping())
+    )
+    .rename(columns={
+        "id": "ID",
+        "student_name": "Student Name",
+        "room_id": "Room Name",
+        "start_time": "Start Time",
+        "end_time": "End Time",
+        "request_timestamp": "Request Timestamp",
+        "is_canceled": "Is Cancelled"
+    })
+    # Only keep the columns you want, in the order you want them
+    [["ID", "Student Name", "Room Name", "Date", "Start Time", "End Time", "Request Timestamp", "Is Cancelled"]]
+)
 
 if df.empty:
     st.info("No reservation data available yet.")
@@ -92,36 +112,27 @@ if df.empty:
 # -----------------------------
 # Cleanup / formatting
 df["Room Name"] = df["Room Name"].astype("category")
-df["Start Time"] = df["Start Time"].astype(str).str[:5]
-df["End Time"] = df["End Time"].astype(str).str[:5]
 
 today = date.today()
 
-def classify_period(reservation_date):
-    """
-    :param reservation_date:
-    :return:
-    """
-    if reservation_date < today:
-        return "Past"
-    elif reservation_date == today:
-        return "Today"
-    return "Future"
-
-df["Period"] = df["Date"].apply(classify_period)
+df["Period"] = "Future"
+df.loc[df["Date"] < today, "Period"] = "Past"
+df.loc[df["Date"] == today, "Period"] = "Today"
 
 total_reservations = len(df)
 past_count = len(df[df["Period"] == "Past"])
 today_count = len(df[df["Period"] == "Today"])
 future_count = len(df[df["Period"] == "Future"])
 cancellation_count = len(df[df["Is Cancelled"] == "Yes"])
+hours_count = sum((rr.end_dt - rr.start_dt).total_seconds() for rr in rows) / 3600
 
-m1, m2, m3, m4, m5 = st.columns(5)
+m1, m2, m3, m4, m5, m6 = st.columns(6)
 m1.metric("Total", total_reservations)
 m2.metric("Past", past_count)
 m3.metric("Today", today_count)
 m4.metric("Upcoming", future_count)
 m5.metric("Cancelled", cancellation_count)
+m6.metric("Total Booked Hours", hours_count)
 
 st.markdown("---")
 st.subheader("Filters")
@@ -152,7 +163,7 @@ if period_filter != "All":
 if room_filter != "All":
     filtered_df = filtered_df[filtered_df["Room Name"] == room_filter]
 
-filtered_df = filtered_df.sort_values(by=["Date", "Start Time", "Room Name"], ascending=[True, True, True])
+filtered_df = filtered_df.sort_values(by=["Start Time", "Room Name"], ascending=[True, True])
 
 # -----------------------------
 # Main reservation table
