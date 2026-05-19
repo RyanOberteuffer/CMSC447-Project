@@ -15,3 +15,5 @@ class Room(db.Model):
     saturday_availability_end = db.Column(db.DateTime, nullable=False)
     sunday_availability_start = db.Column(db.DateTime, nullable=False)
     sunday_availability_end = db.Column(db.DateTime, nullable=False)
+
+    reservations = db.relationship('RoomReservation', back_populates='reservations')
